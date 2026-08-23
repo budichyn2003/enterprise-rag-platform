@@ -1,0 +1,30 @@
+[project]
+name = "stackplus-ai-core"
+version = "0.1.0"
+description = "Main Core AI Engineer Backend Engine by Budi Cahyono"
+authors = [
+    {name = "Budi Cahyono", email = "stackplustudio@gmail.com"}
+]
+requires-python = ">=3.10,<3.13"
+
+dependencies = [
+    "fastapi>=0.139.2,<0.140.0",
+    "uvicorn>=0.51.0,<0.52.0",
+    "python-dotenv>=1.2.2,<2.0.0",
+    "pydantic>=2.13.4,<3.0.0",
+    "openai>=2.46.0,<3.0.0",
+    "langchain>=1.3.14,<2.0.0",
+    "langchain-openai>=1.3.5,<2.0.0"
+]
+
+
+# Poetry configuration
+[tool.poetry]
+package-mode = false
+
+
+[build-system]
+requires = [
+    "poetry-core>=2.0.0,<3.0.0"
+]
+build-backend = "poetry.core.masonry.api"
