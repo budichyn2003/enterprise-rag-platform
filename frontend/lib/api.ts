@@ -1,38 +1,46 @@
-// Mengambil URL backend dari environment variable
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Mengambil Base URL dari environment variables (sesuai aturan keamanan README.md)
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
-interface RequestOptions extends RequestInit {
-    params?: Record<string, string>; // Untuk query parameters seperti ?q=keyword
+export interface ChatRequestPayload {
+    session_id?: string;
+    message: string;
+    language?: string;
 }
 
-export async function fetchAPI<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-    const { params, headers, ...customConfig } = options;
+export interface Citation {
+    document_id: string;
+    title: string;
+    url?: string;
+}
 
-    // Formatting URL dengan query parameters jika ada
-    const queryString = params ? `?${new URLSearchParams(params).toString()}` : "";
-    const url = `${API_BASE_URL}${endpoint}${queryString}`;
+export interface ChatResponsePayload {
+    session_id: string;
+    answer: string;
+    citations: Citation[];
+    confidence_score: number;
+    needs_escalation: boolean;
+}
 
-    // Konfigurasi default headers
-    const config: RequestInit = {
-        ...customConfig,
-        headers: {
-            "Content-Type": "application/json",
-            ...headers,
-        },
-    };
-
+/**
+ * Mengirim pesan ke RAG Backend dan mengembalikan jawaban AI.
+ */
+export async function sendChatMessage(payload: ChatRequestPayload): Promise<ChatResponsePayload> {
     try {
-        const response = await fetch(url, config);
+        const response = await fetch(`${API_BASE_URL}/chat`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+        });
 
-        // Menangani error dari backend FastAPI yang sudah kita standarkan tadi
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || `API request failed with status ${response.status}`);
+            throw new Error(`API error: ${response.status}`);
         }
 
         return await response.json();
     } catch (error) {
-        console.error(`[API Error] ${endpoint}:`, error);
+        console.error("Gagal mengirim pesan chat:", error);
         throw error;
     }
 }

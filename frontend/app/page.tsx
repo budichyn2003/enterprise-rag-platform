@@ -1,128 +1,39 @@
 "use client";
 
-
-import { useState } from "react";
-import { checkBackend } from "@/lib/api";
-
+import { ChatWidget } from "@/components/features/chat/ChatWidget";
 
 export default function Home() {
-
-
-    const [status, setStatus] = useState("");
-
-
-    async function handleCheck() {
-
-        try {
-
-            const data = await checkBackend();
-
-            setStatus(
-                `Backend Connected 🚀 - ${data.system}`
-            );
-
-        } catch (error) {
-
-            setStatus(
-                "Backend Not Connected ❌"
-            );
-
-        }
-
-    }
-
-
     return (
+        <main className="min-h-screen relative flex items-center justify-center overflow-hidden">
+            {/* Background Decorative Gradient (sesuai panduan UI.md untuk hero/decorative) */}
+            <div className="absolute inset-0 z-0 bg-gradient-to-br from-mc-soft/40 via-mc-base to-mc-primary/5"></div>
 
-        <main className="
-      min-h-screen
-      bg-white
-      flex
-      items-center
-      justify-center
-    ">
+            <section className="relative z-10 text-center max-w-3xl px-6">
+                <span className="rounded-full bg-mc-soft px-3 py-1 text-sm font-medium text-mc-dark mb-6 inline-block">
+                    Versi 1.0 - Beta Terbatas
+                </span>
 
-
-            <section className="text-center">
-
-
-                <p className="
-          text-blue-600
-          font-semibold
-        ">
-                    AI ENGINEER CORE SYSTEM
-                </p>
-
-
-                <h1 className="
-          mt-6
-          text-5xl
-          font-bold
-          text-gray-900
-        ">
-                    Welcome Main Core
+                <h1 className="text-4xl md:text-5xl font-bold text-mc-dark leading-tight mb-6">
+                    Layanan Pelanggan Instan dengan <span className="text-mc-primary">Enterprise RAG</span>
                 </h1>
 
-
-                <h2 className="
-          mt-4
-          text-6xl
-          font-bold
-          text-blue-600
-        ">
-                    Budi Cahyono
-                </h2>
-
-
-                <p className="
-          mt-6
-          text-gray-500
-        ">
-                    Fullstack AI Engineer Template
+                <p className="text-lg text-mc-dark/70 mb-10">
+                    Platform AI-Powered Customer Support untuk menjawab pertanyaan Anda secara otomatis, akurat, dan bersumber dari basis pengetahuan resmi kami.
                 </p>
 
-
-
-                <button
-                    onClick={handleCheck}
-                    className="
-          mt-10
-          px-6
-          py-3
-          rounded-xl
-          bg-blue-600
-          text-white
-          hover:bg-blue-700
-          "
-                >
-
-                    Check Backend Status
-
-                </button>
-
-
-
-                {
-                    status && (
-
-                        <p className="
-              mt-6
-              text-blue-600
-              font-semibold
-            ">
-
-                            {status}
-
-                        </p>
-
-                    )
-                }
-
-
+                {/* Dummy Call-to-Action untuk estetika halaman */}
+                <div className="flex justify-center gap-4">
+                    <button className="bg-mc-primary text-white rounded-lg px-6 py-3 font-medium hover:bg-mc-dark transition-colors duration-200 shadow-sm">
+                        Pelajari Lebih Lanjut
+                    </button>
+                    <button className="glass-panel text-mc-dark rounded-lg px-6 py-3 font-medium hover:bg-white/60 transition-colors duration-200">
+                        Dokumentasi API
+                    </button>
+                </div>
             </section>
 
-
+            {/* Injeksi Chat Widget yang kita buat sebelumnya */}
+            <ChatWidget />
         </main>
-
     );
 }
