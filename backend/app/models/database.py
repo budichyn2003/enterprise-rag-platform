@@ -1,9 +1,41 @@
-from sqlalchemy import Column, String, Text, DateTime, Float, Boolean, ForeignKey, JSON
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy import Column, String, Text, DateTime, Float, ForeignKey, JSON
 from datetime import datetime
+import os
 import uuid
 
+# 1. Ambil DATABASE_URL dari file .env
+DATABASE_URL = os.getenv("DATABASE_URL", "")
+
+# 2. Modifikasi skema URL agar menggunakan driver asyncpg (Wajib untuk Async SQLAlchemy)
+if DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+elif DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
+
+# Jika .env kosong/tidak ada DATABASE_URL, gunakan SQLite async sebagai cadangan agar tidak crash
+if not DATABASE_URL:
+    DATABASE_URL = "sqlite+aiosqlite:///./sql_app.db"
+
+# 3. Buat Async Engine yang dicari oleh app/main.py baris 20
+engine = create_async_engine(DATABASE_URL, echo=False)
+
+# 4. Buat sessionmaker versi Async
+AsyncSessionLocal = sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autocommit=False,
+    autoflush=False
+)
+
+# 5. Deklarasi Base Model
 Base = declarative_base()
+
+# =====================================================================
+# SKEMA TABEL KAMU (TETAP DIPERTAHANKAN)
+# =====================================================================
 
 class DocumentRecord(Base):
     """Menyimpan metadata dari dokumen yang di-ingest (FR-KM-05)"""
