@@ -1,524 +1,342 @@
-# 🚀 Budi Cahyono — Maincore
+# Enterprise RAG Platform
 
-> **Reusable Fullstack & AI Project Foundation**
+Platform AI untuk customer support dan knowledge management berbasis Retrieval Augmented Generation (RAG), terdiri dari backend FastAPI dan frontend Next.js. Proyek ini dirancang untuk mengelola dokumen, melakukan indexing, dan menyediakan chatbot yang menjawab pertanyaan pelanggan berdasarkan basis pengetahuan internal.
 
-Maincore adalah template foundation yang digunakan sebagai titik awal untuk membangun berbagai aplikasi **Fullstack, AI, dan Web System**.
+## Ringkasan Proyek
 
-Tujuan utama Maincore:
+Proyek ini dibangun sebagai monorepo dengan dua bagian utama:
 
-> **Clone → Setup → Start Coding**
+- Backend: FastAPI untuk API, logika RAG, dan integrasi database
+- Frontend: Next.js untuk dashboard dan antarmuka chat/knowledge base
+- DevOps: Docker Compose untuk menjalankan backend dan frontend dalam satu ekosistem
 
-Maincore menangani struktur dasar dan konfigurasi umum agar waktu development dapat difokuskan pada fitur dan business logic.
+Struktur ini memungkinkan pengembangan modular untuk:
 
----
+- ingest dokumen ke knowledge base
+- query dan retrieval informasi relevan
+- menampilkan hasil answer ke user melalui chat interface
+- mengelola data dokumen di admin panel
 
-# 🧠 Philosophy
+## Fitur Utama
 
-Maincore bukan aplikasi jadi.
+- Chat API berbasis RAG dengan request/response schema yang jelas
+- Endpoint upload dokumen dan daftar dokumen
+- Skema database untuk dokumen, percakapan, dan pesan
+- Dashboard admin knowledge base untuk melihat status indexing dokumen
+- Landing page modern untuk customer support AI
+- Support konfigurasi environment dan deployment berbasis Docker
 
-Maincore adalah **fondasi project** yang dapat digunakan kembali untuk project baru.
+## Status Implementasi
 
-Prinsip utama:
+Repository ini masih dalam tahap pengembangan awal. Beberapa bagian sudah disediakan sebagai blueprint dan struktur modular, namun beberapa logika RAG dan ingestion masih bersifat placeholder / mock-up dan siap dikembangkan lebih lanjut, misalnya:
 
-* Keep the architecture simple.
-* Reuse existing structure.
-* Avoid unnecessary complexity.
-* Business logic belongs to modules/services.
-* Add new dependencies only when necessary.
-* Do not duplicate existing functionality.
-* Optional features should not become mandatory dependencies.
+- `backend/app/services/rag_service.py`
+- `backend/app/services/ingestion_service.py`
+- `backend/app/services/llm_service.py` (belum diimplementasikan secara penuh)
 
-Maincore akan berkembang berdasarkan kebutuhan project nyata.
+Artinya, proyek sudah memiliki arsitektur dasar yang benar dan siap untuk dikembangkan ke production-grade dengan integrasi model LLM, vector DB, dan penyimpanan data yang lengkap.
 
----
+## Teknologi yang Digunakan
 
-# 🏗️ Architecture
+### Backend
 
-```text
-                         MAINCORE
-                            │
-             ┌──────────────┴──────────────┐
-             │                             │
-            CORE                       OPTIONAL
-             │                             │
-      ┌──────┼──────┐             ┌────────┼────────┐
-      │      │      │             │        │        │
-    Web     API   Database        LLM      RAG     Agent
-```
+- Python 3.10+
+- FastAPI
+- SQLAlchemy (async)
+- Pydantic v2
+- OpenAI / LangChain-ready integration
+- Uvicorn
 
-## Core
+### Frontend
 
-Komponen dasar yang digunakan oleh hampir semua project:
+- Next.js 16
+- React 19
+- TypeScript
+- Tailwind CSS
 
-* Frontend
-* Backend
-* Configuration
-* Environment
-* Database
-* API communication
-* Reusable components
-* Utilities
-* Validation
-* Error handling
+### Infrastructure / Tooling
 
-## Optional Modules
+- Docker Compose
+- Poetry (Python dependency management)
+- npm / package-lock
+- SQLite fallback untuk local development
 
-Fitur yang hanya digunakan jika project membutuhkannya:
-
-* LLM
-* RAG
-* AI Agent
-* Machine Learning
-* Computer Vision
-* Other AI services
-
----
-
-# 📂 Project Structure
+## Struktur Folder
 
 ```text
-maincore/
-│
-├── backend/
-│   ├── app/
-│   │   ├── main.py
-│   │   │
-│   │   ├── api/
-│   │   │   └── routes.py
-│   │   │
-│   │   ├── core/
-│   │   │   └── config.py
-│   │   │
-│   │   ├── services/
-│   │   │   ├── llm_service.py
-│   │   │   ├── rag_service.py
-│   │   │   └── agent_service.py
-│   │   │
-│   │   ├── vectorstore/
-│   │   │   └── chroma_db.py
-│   │   │
-│   │   └── models/
-│   │       └── schemas.py
-│   │
-│   └── ...
-│
-├── frontend/
-│   ├── app/
-│   ├── components/
-│   ├── hooks/
-│   ├── lib/
-│   └── public/
-│
-├── .env.example
-├── .gitignore
-└── README.md
+enterprise-rag-platform/
+├─ backend/
+│  ├─ app/
+│  │  ├─ api/
+│  │  │  └─ routes.py
+│  │  ├─ core/
+│  │  │  ├─ config.py
+│  │  │  ├─ exceptions.py
+│  │  │  └─ logger.py
+│  │  ├─ models/
+│  │  │  ├─ database.py
+│  │  │  └─ schemas.py
+│  │  ├─ services/
+│  │  │  ├─ agent.py
+│  │  │  ├─ ingestion_service.py
+│  │  │  ├─ llm_service.py
+│  │  │  └─ rag_service.py
+│  │  ├─ __init__.py
+│  │  └─ main.py
+│  ├─ .env.example
+│  ├─ Dockerfile
+│  ├─ pyproject.toml
+│  ├─ poetry.lock
+│  └─ sql_app.db
+├─ frontend/
+│  ├─ app/
+│  │  ├─ admin/
+│  │  │  └─ knowledge/
+│  │  │     └─ page.tsx
+│  │  ├─ globals.css
+│  │  ├─ layout.tsx
+│  │  └─ page.tsx
+│  ├─ components/
+│  ├─ lib/
+│  │  └─ api.ts
+│  ├─ Dockerfile
+│  ├─ package.json
+│  ├─ next.config.ts
+│  ├─ tsconfig.json
+│  └─ eslint.config.mjs
+├─ docs/
+│  ├─ handover.md
+│  ├─ ui.md
+│  └─ PRD_Enterprise_RAG_Platform.docx
+├─ docker-compose.yml
+├─ .gitignore
+├─ README.md
+└─ .vscode/
 ```
 
-> Struktur dapat berkembang mengikuti kebutuhan project. Jangan membuat struktur baru jika struktur yang sudah ada masih dapat digunakan.
+## Arsitektur Aplikasi
 
----
+### 1. Backend API
 
-# ⚙️ Tech Stack
+Backend dibangun dengan FastAPI dan terhubung ke aplikasi melalui `app/main.py`.
 
-## Backend
+Fungsi utama:
 
-* Python 3.10+
-* FastAPI
-* Pydantic
-* LangChain
-* ChromaDB
-* Poetry
+- mendaftarkan router API di `/api`
+- menjalankan startup lifecycle untuk init database
+- menyediakan CORS untuk frontend Next.js di `http://localhost:3000`
+- mensupport response model untuk chat dan dokumen
 
-## Frontend
+### 2. Service Layer
 
-* Next.js
-* React
-* TypeScript
-* Tailwind CSS
+Struktur service sudah dibagi untuk kebutuhan RAG dan ingestion:
 
-## Database
+- `rag_service.py`: logika retrieval dan generation
+- `ingestion_service.py`: pemrosesan dokumen dan indexing
+- `llm_service.py`: integrasi model LLM (belum lengkap)
+- `agent.py`: kemungkinan pengembangan AI agent / orchestration
 
-* PostgreSQL
-* Neon Database
+### 3. Database Layer
 
-## AI
+File `app/models/database.py` mendefinisikan model utama:
 
-* OpenAI
-* LangChain
-* ChromaDB
-* PyTorch
-* Machine Learning models
+- `DocumentRecord` untuk metadata dokumen
+- `Conversation` untuk sesi chat
+- `Message` untuk log percakapan dan citation
 
-AI dependencies bersifat **optional** dan hanya digunakan ketika project membutuhkan fitur AI.
+DB config membaca `DATABASE_URL` dari environment. Jika tidak ada, aplikasi akan fallback ke SQLite untuk pengembangan lokal.
 
----
+### 4. Frontend UI
 
-# 🚀 Getting Started
+Frontend menggunakan Next.js dengan fokus pada:
 
-## 1. Clone Maincore
+- landing page produk
+- chat widget
+- admin knowledge base page
+- styling yang konsisten dengan `docs/ui.md`
+
+## Prasyarat
+
+Pastikan perangkat Anda sudah memiliki:
+
+- Python 3.10+
+- Node.js 18+
+- npm
+- Poetry
+- Docker & Docker Compose (opsional, jika ingin menjalankan semua service sekaligus)
+- API key OpenAI bila ingin mengaktifkan integrasi LLM real
+
+## Persiapan Environment
+
+### Backend
+
+Buat file `.env` di folder `backend/` berdasarkan contoh:
 
 ```bash
-git clone <repository-url> my-project
-cd my-project
+cp backend/.env.example backend/.env
 ```
 
-## 2. Setup Backend
+Contoh isi `.env`:
+
+```env
+OPENAI_API_KEY=your_openai_api_key_here
+DATABASE_URL=postgresql://user:password@localhost:5432/enterprise_rag
+PROJECT_NAME="Enterprise RAG Platform"
+VERSION="1.0.0"
+```
+
+Catatan:
+
+- Jika `DATABASE_URL` kosong, aplikasi memakai SQLite fallback (`sql_app.db`)
+- Untuk pengembangan lokal, Anda juga bisa langsung isi ke SQLite bila ingin cepat setup
+
+### Frontend
+
+Buat file `.env.local` di folder `frontend/`:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000/api
+```
+
+## Menjalankan Aplikasi
+
+### Opsi 1: Jalankan backend dan frontend secara terpisah
+
+#### Backend
 
 ```bash
 cd backend
 poetry install
+poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Create environment:
-
-```bash
-cp .env.example .env
-```
-
-Run:
-
-```bash
-poetry run uvicorn app.main:app --reload
-```
-
-Backend:
-
-```text
-http://localhost:8000
-```
-
-API Documentation:
-
-```text
-http://localhost:8000/docs
-```
-
----
-
-# 🎨 Frontend Setup
+#### Frontend
 
 ```bash
 cd frontend
 npm install
-```
-
-Create:
-
-```text
-.env.local
-```
-
-Example:
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
-
-Run:
-
-```bash
 npm run dev
 ```
 
-Frontend:
+Setelah itu:
 
-```text
-http://localhost:3000
-```
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- Swagger docs: http://localhost:8000/docs
 
----
+### Opsi 2: Jalankan dengan Docker Compose
 
-# 🔐 Environment
-
-Gunakan `.env.example` sebagai template.
-
-Contoh:
-
-```env
-# Application
-PROJECT_NAME="My Project"
-VERSION="1.0.0"
-APP_ENV="development"
-
-# Backend
-PORT=8000
-
-# Database
-DATABASE_URL=""
-
-# AI - Optional
-OPENAI_API_KEY=""
-```
-
-### Rules
-
-* Jangan commit `.env`.
-* Jangan menyimpan API key di source code.
-* Tambahkan environment variable baru ke `.env.example`.
-* Gunakan environment variable untuk configuration.
-
----
-
-# 📦 Common Commands
-
-## Backend
+Dari root project:
 
 ```bash
+docker compose up --build
+```
+
+Ini akan menjalankan:
+
+- backend di port 8000
+- frontend di port 3000
+
+## Endpoint API Utama
+
+### Chat
+
+`POST /api/chat`
+
+Request body:
+
+```json
+{
+  "session_id": "session-123",
+  "message": "Bagaimana cara pengembalian dana?",
+  "language": "id"
+}
+```
+
+Response model:
+
+```json
+{
+  "session_id": "session-123",
+  "answer": "...",
+  "citations": [
+    {
+      "document_id": "doc-1",
+      "title": "FAQ Pengiriman",
+      "url": null
+    }
+  ],
+  "confidence_score": 0.92,
+  "needs_escalation": false
+}
+```
+
+### Upload Dokumen
+
+`POST /api/documents/upload`
+
+Mengembalikan status dokumen dalam antrean untuk diproses lebih lanjut.
+
+### Daftar Dokumen
+
+`GET /api/documents`
+
+Mengembalikan metadata dokumen dan status indexing.
+
+## Dokumentasi Pendukung
+
+- `docs/ui.md`: design system dan guidelines visual
+- `docs/handover.md`: catatan workflow dan arsitektur proyek
+- `docs/PRD_Enterprise_RAG_Platform.docx`: product requirements document
+
+## Struktur Kode Penting
+
+- `backend/app/main.py`: entry point aplikasi FastAPI
+- `backend/app/api/routes.py`: endpoint utama backend
+- `backend/app/models/schemas.py`: schema request/response
+- `backend/app/models/database.py`: model SQLAlchemy
+- `backend/app/services/rag_service.py`: logika generative retrieval
+- `frontend/lib/api.ts`: wrapper API client untuk frontend
+- `frontend/app/admin/knowledge/page.tsx`: halaman admin knowledge base
+- `frontend/app/page.tsx`: landing page utama
+
+## Catatan Pengembangan
+
+Proyek ini sudah mengadopsi pendekatan modular, namun masih memerlukan penguatan pada bagian berikut agar siap production:
+
+- integrasi LLM yang nyata
+- penyimpanan vector database
+- pipeline ingestion dokumen dari PDF/DOCX/Confluence
+- autentikasi dan authorization
+- observability dan logging
+- test coverage
+- deployment staging/production
+
+## Perintah Berguna
+
+### Backend
+
+```bash
+cd backend
 poetry install
+poetry run pytest
 poetry run uvicorn app.main:app --reload
 ```
 
-## Frontend
+### Frontend
 
 ```bash
+cd frontend
 npm install
-npm run dev
-npm run build
 npm run lint
+npm run build
+npm run dev
 ```
 
----
+## Lisensi
 
-# 🧩 Development Rules
+Belum ada file lisensi yang ditambahkan pada repository ini. Jika proyek akan dipublikasikan atau dibagikan ke tim/klien, disarankan untuk menambahkan lisensi yang sesuai (misalnya MIT atau Apache-2.0).
 
-## Backend
+## Kesimpulan
 
-* `main.py` hanya menangani application initialization.
-* API routes harus tetap sederhana.
-* Business logic berada di `services`.
-* Configuration berada di `core`.
-* Schema berada di `models`.
-* AI logic berada di AI services.
-* Vector database logic berada di `vectorstore`.
-
-## Frontend
-
-* Gunakan reusable components.
-* UI components berada di `components`.
-* API communication berada di `lib`.
-* Gunakan hooks untuk reusable client-side logic.
-* Hindari business logic besar di page/component.
-
----
-
-# 📐 General Rules
-
-1. **Follow the existing architecture first.**
-2. Reuse existing files/functions before creating new ones.
-3. Jangan membuat duplicate utility/service.
-4. Jangan membuat folder baru tanpa alasan yang jelas.
-5. Jangan menambahkan dependency jika belum diperlukan.
-6. Jangan mengubah core architecture hanya untuk satu fitur.
-7. Pisahkan business logic dari UI dan entry point.
-8. Gunakan environment variables untuk secrets/configuration.
-9. Keep modules small and understandable.
-10. Prefer simple solutions over complex abstractions.
-
----
-
-# 🤖 AI Coding Instructions
-
-When working inside Maincore:
-
-```text
-You are working inside Budi Cahyono Maincore.
-
-Before creating or modifying code:
-
-1. Inspect the existing project structure.
-2. Follow the existing architecture.
-3. Reuse existing utilities, services and components.
-4. Do not create duplicate functionality.
-5. Do not create unnecessary folders.
-6. Do not introduce unnecessary dependencies.
-
-Backend:
-- FastAPI
-- Keep main.py for initialization only.
-- Keep API routes thin.
-- Put business logic inside services.
-- Keep configuration inside core.
-- Keep schemas inside models.
-
-Frontend:
-- Next.js
-- Use reusable components.
-- Keep API communication separated.
-- Avoid large business logic inside UI components.
-
-AI:
-- AI modules are optional.
-- Do not introduce AI dependencies unless the requested feature requires them.
-
-General:
-- Preserve the existing architecture.
-- Make the smallest reasonable change.
-- Prefer simple and maintainable solutions.
-- Do not rewrite unrelated code.
-```
-
----
-
-# 🧪 Development Checklist
-
-Before considering a feature complete:
-
-```text
-[ ] Application runs successfully
-[ ] Existing architecture is preserved
-[ ] No duplicate functionality
-[ ] Environment variables are documented
-[ ] API works correctly
-[ ] Frontend works correctly
-[ ] No unnecessary dependencies added
-[ ] Existing functionality is not broken
-```
-
----
-
-# 🔄 Creating a New Project
-
-Maincore is intended to be reused for future projects.
-
-Recommended workflow:
-
-```text
-MAINCORE
-   │
-   ▼
-Clone Repository
-   │
-   ▼
-Rename Project
-   │
-   ▼
-Configure .env
-   │
-   ▼
-Remove Unused Optional Modules
-   │
-   ▼
-Install Dependencies
-   │
-   ▼
-Start Development
-```
-
-Example:
-
-```bash
-git clone <maincore-repository> bank-sampah
-cd bank-sampah
-```
-
-Then configure the project-specific:
-
-* Project name
-* Environment variables
-* Database
-* Business modules
-* UI
-* Features
-
-The existing Maincore architecture should remain the foundation.
-
----
-
-# 🚧 What Should NOT Be Added to Core
-
-Do not add project-specific features directly into Maincore unless they are repeatedly useful across multiple projects.
-
-Examples:
-
-```text
-❌ Bank Sampah business logic
-❌ E-commerce business logic
-❌ School-specific features
-❌ One-project payment implementation
-❌ One-project workflow
-```
-
-Instead:
-
-```text
-Maincore
-   │
-   ├── Core
-   │
-   └── Project
-        ├── Bank Sampah
-        ├── E-Commerce
-        ├── School System
-        └── AI Application
-```
-
----
-
-# 🎯 Purpose
-
-Maincore exists to eliminate repetitive project setup.
-
-The goal is simple:
-
-```text
-OLD WAY
-
-New Project
-    ↓
-Setup Backend
-    ↓
-Setup Frontend
-    ↓
-Setup Configuration
-    ↓
-Setup Structure
-    ↓
-Setup API
-    ↓
-Setup AI
-    ↓
-Finally Start Coding
-
-
-MAINCORE WAY
-
-Clone
-  ↓
-Configure
-  ↓
-Start Coding
-```
-
-> **Build features, not boilerplate.**
-
----
-
-# 👨‍💻 Author
-
-## Budi Cahyono
-
-AI Engineer | Fullstack Developer
-
-Building:
-
-* Fullstack Applications
-* AI Applications
-* LLM Systems
-* RAG Systems
-* AI Agents
-* Machine Learning Systems
-* Modern Web Applications
-
----
-
-# ⭐ Maincore Principle
-
-```text
-Keep it simple.
-Keep it reusable.
-Keep it maintainable.
-
-Clone.
-Configure.
-Build.
-```
+Repository ini merupakan fondasi yang solid untuk sistem customer support AI berbasis RAG. Dengan struktur backend/frontend yang rapi, dokumentasi desain, dan skema data yang sudah dibuat, proyek ini siap untuk dikembangkan menjadi aplikasi knowledge assistant yang lebih lengkap dan siap produksi.
