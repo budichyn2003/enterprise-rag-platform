@@ -1,151 +1,362 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import {
+    ApiError,
+    deleteConversationData,
+    requestHumanHandoff,
+    resolveConversation,
+    sendChatMessage,
+    submitChatFeedback,
+} from "@/lib/api";
+import type { Citation, ChatResponsePayload } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { sendChatMessage } from "@/lib/api";
 
 interface Message {
+    id: string;
     role: "user" | "ai";
     content: string;
-    citations?: { title: string; url?: string }[];
+    citations?: Citation[];
+    messageId?: string | null;
+    needsEscalation?: boolean;
+}
+
+function safeCitationUrl(url: string | null | undefined): string | undefined {
+    if (!url) return undefined;
+    try {
+        const parsed = new URL(url);
+        return parsed.protocol === "https:" || parsed.protocol === "http:" ? parsed.href : undefined;
+    } catch {
+        return undefined;
+    }
 }
 
 export const ChatWidget: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [input, setInput] = useState("");
+    const [sessionId, setSessionId] = useState<string | null>(null);
     const [messages, setMessages] = useState<Message[]>([
-        { role: "ai", content: "Halo! Ada yang bisa saya bantu hari ini?" }
+        {
+            id: "welcome",
+            role: "ai",
+            content: "Halo! Silakan tanyakan informasi produk atau bantuan.",
+        },
     ]);
     const [isLoading, setIsLoading] = useState(false);
-
+    const [busyMessageId, setBusyMessageId] = useState<string | null>(null);
+    const [ratedMessageIds, setRatedMessageIds] = useState<Set<string>>(new Set());
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Auto-scroll ke bawah saat pesan bertambah atau sedang loading
+    useEffect(() => {
+        const openChat = () => setIsOpen(true);
+        window.addEventListener("enterprise-rag:open-chat", openChat);
+        return () => window.removeEventListener("enterprise-rag:open-chat", openChat);
+    }, []);
+
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages, isLoading]);
 
+    const appendResponse = (response: ChatResponsePayload) => {
+        setSessionId(response.session_id);
+        setMessages((previous) => [
+            ...previous,
+            {
+                id: response.message_id || crypto.randomUUID(),
+                role: "ai",
+                content: response.answer,
+                citations: response.citations,
+                messageId: response.message_id,
+                needsEscalation: response.needs_escalation,
+            },
+        ]);
+    };
+
     const handleSend = async () => {
-        if (!input.trim() || isLoading) return;
-
-        const userMessage = input.trim();
+        const message = input.trim();
+        if (!message || isLoading) return;
         setInput("");
-        setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+        setErrorMessage(null);
+        setMessages((previous) => [
+            ...previous,
+            { id: crypto.randomUUID(), role: "user", content: message },
+        ]);
         setIsLoading(true);
-
         try {
-            // Memanggil API backend
-            const response = await sendChatMessage({ message: userMessage });
-            setMessages((prev) => [
-                ...prev,
-                {
-                    role: "ai",
-                    content: response.answer,
-                    citations: response.citations
+            let response: ChatResponsePayload;
+            try {
+                response = await sendChatMessage({
+                    session_id: sessionId || undefined,
+                    message,
+                    language: "id",
+                });
+            } catch (error) {
+                if (!(error instanceof ApiError) || error.status !== 404 || !sessionId) {
+                    throw error;
                 }
-            ]);
+                setSessionId(null);
+                response = await sendChatMessage({ message, language: "id" });
+            }
+            appendResponse(response);
         } catch (error) {
-            setMessages((prev) => [
-                ...prev,
-                { role: "ai", content: "Maaf, terjadi kesalahan komunikasi dengan server." }
-            ]);
+            console.error("Gagal mengirim pesan chat:", error);
+            setErrorMessage("Pesan belum terkirim. Periksa koneksi server lalu coba lagi.");
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === "Enter") {
-            handleSend();
+    const handleFeedback = async (message: Message, rating: number) => {
+        const messageId = message.messageId;
+        if (!sessionId || !messageId) return;
+        setBusyMessageId(messageId);
+        setErrorMessage(null);
+        try {
+            await submitChatFeedback(sessionId, messageId, rating);
+            setRatedMessageIds((previous) => new Set(previous).add(messageId));
+        } catch (error) {
+            console.error("Gagal menyimpan feedback:", error);
+            setErrorMessage("Feedback belum tersimpan. Silakan coba lagi.");
+        } finally {
+            setBusyMessageId(null);
+        }
+    };
+
+    const handleHandoff = async () => {
+        if (!sessionId || isLoading) return;
+        setIsLoading(true);
+        setErrorMessage(null);
+        try {
+            const result = await requestHumanHandoff(sessionId);
+            setMessages((previous) => [
+                ...previous,
+                {
+                    id: result.handoff_id,
+                    role: "ai",
+                    content: `${result.message} Estimasi waktu tunggu: sekitar ${result.estimated_wait_minutes} menit.`,
+                    needsEscalation: true,
+                },
+            ]);
+        } catch (error) {
+            console.error("Gagal meminta bantuan agent:", error);
+            setErrorMessage("Permintaan agent belum terkirim. Silakan coba lagi.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleResolve = async () => {
+        if (!sessionId || isLoading) return;
+        setIsLoading(true);
+        setErrorMessage(null);
+        try {
+            await resolveConversation(sessionId);
+            setMessages((previous) => [
+                ...previous,
+                {
+                    id: crypto.randomUUID(),
+                    role: "ai",
+                    content: "Percakapan ditandai selesai. Terima kasih telah menghubungi kami.",
+                },
+            ]);
+        } catch (error) {
+            console.error("Gagal menutup percakapan:", error);
+            setErrorMessage("Percakapan belum dapat ditutup. Silakan coba lagi.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleDeleteSession = async () => {
+        if (!sessionId || isLoading) return;
+        if (!window.confirm("Hapus riwayat percakapan dan feedback sesi ini secara permanen?")) return;
+        setIsLoading(true);
+        setErrorMessage(null);
+        try {
+            await deleteConversationData(sessionId);
+            setSessionId(null);
+            setMessages([
+                {
+                    id: "welcome",
+                    role: "ai",
+                    content: "Riwayat sesi demo telah dihapus. Silakan mulai percakapan baru.",
+                },
+            ]);
+        } catch (error) {
+            console.error("Gagal menghapus percakapan:", error);
+            setErrorMessage("Data sesi belum dapat dihapus. Silakan coba lagi.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            void handleSend();
         }
     };
 
     if (!isOpen) {
         return (
             <button
+                type="button"
                 onClick={() => setIsOpen(true)}
-                className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-mc-primary text-white shadow-lg transition-transform hover:scale-105 flex items-center justify-center z-50"
-                aria-label="Open Chat"
+                className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-mc-primary text-white shadow-lg transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mc-dark"
+                aria-label="Buka chat support"
             >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
             </button>
         );
     }
 
     return (
-        <div className="fixed bottom-6 right-6 w-full max-w-sm sm:max-w-md h-[500px] max-h-[80vh] glass-panel-strong rounded-xl flex flex-col shadow-2xl z-50 overflow-hidden transition-all">
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-white/20 bg-mc-dark/5 p-4 backdrop-blur-md">
+        <section
+            className="glass-panel-strong fixed bottom-6 right-4 z-50 flex h-[min(600px,80vh)] w-[calc(100vw-2rem)] max-w-md flex-col overflow-hidden rounded-xl shadow-2xl sm:right-6"
+            aria-label="Chat support"
+        >
+            <header className="flex items-center justify-between border-b border-white/20 bg-mc-dark/5 p-4 backdrop-blur-md">
                 <div>
-                    <h3 className="font-semibold text-mc-dark">Support Assistant</h3>
-                    <p className="text-xs text-mc-dark/70">Powered by Enterprise RAG</p>
+                    <h2 className="font-semibold text-mc-dark">Support Assistant</h2>
+                    <p className="text-xs text-mc-dark/70">Mode demo dengan data sintetis</p>
                 </div>
-                <button onClick={() => setIsOpen(false)} className="text-mc-dark hover:text-mc-primary transition-colors">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                <button
+                    type="button"
+                    onClick={() => setIsOpen(false)}
+                    className="rounded p-2 text-mc-dark hover:text-mc-primary focus-visible:outline-2 focus-visible:outline-mc-primary"
+                    aria-label="Tutup chat"
+                >
+                    <span aria-hidden="true">×</span>
                 </button>
-            </div>
+            </header>
 
-            {/* Conversation Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {messages.map((msg, idx) => (
-                    <div key={idx} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
-                        <div className={`text-sm px-4 py-2 max-w-[85%] inline-block ${msg.role === "user"
-                            ? "bg-mc-primary/10 border border-mc-primary/20 text-mc-dark rounded-2xl rounded-tr-none"
-                            : "glass-panel text-mc-dark rounded-2xl rounded-tl-none"
-                            }`}>
-                            {msg.content}
-
-                            {/* Render Citations if any */}
-                            {msg.citations && msg.citations.length > 0 && (
-                                <div className="mt-2 pt-2 border-t border-mc-dark/10 flex flex-wrap gap-1">
-                                    {msg.citations.map((cite, cIdx) => (
-                                        <span key={cIdx} className="rounded-full bg-mc-soft px-2 py-0.5 text-[10px] font-medium text-mc-dark">
-                                            📄 {cite.title}
-                                        </span>
-                                    ))}
+            <div className="flex-1 space-y-4 overflow-y-auto p-4" aria-live="polite">
+                {messages.map((message) => (
+                    <article
+                        key={message.id}
+                        className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}
+                    >
+                        <div
+                            className={`max-w-[88%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm ${
+                                message.role === "user"
+                                    ? "rounded-tr-none border border-mc-primary/20 bg-mc-primary/10 text-mc-dark"
+                                    : "glass-panel rounded-tl-none text-mc-dark"
+                            }`}
+                        >
+                            {message.content}
+                            {message.citations && message.citations.length > 0 && (
+                                <div className="mt-3 flex flex-wrap gap-2 border-t border-mc-dark/10 pt-2">
+                                    {message.citations.map((citation) => {
+                                        const url = safeCitationUrl(citation.url);
+                                        return url ? (
+                                            <a
+                                                key={citation.document_id}
+                                                href={url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="rounded-full bg-mc-soft px-2 py-1 text-xs font-medium text-mc-dark underline"
+                                            >
+                                                {citation.title}
+                                            </a>
+                                        ) : (
+                                            <span
+                                                key={citation.document_id}
+                                                className="rounded-full bg-mc-soft px-2 py-1 text-xs font-medium text-mc-dark"
+                                            >
+                                                {citation.title}
+                                            </span>
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
-                    </div>
+                        {message.role === "ai" && message.messageId && (
+                            <div className="mt-1 flex gap-2 text-xs text-mc-dark/70">
+                                <button
+                                    type="button"
+                                    onClick={() => void handleFeedback(message, 5)}
+                                    disabled={busyMessageId === message.messageId || ratedMessageIds.has(message.messageId)}
+                                    className="rounded px-2 py-1 underline hover:text-mc-primary disabled:opacity-50"
+                                    aria-label="Jawaban membantu"
+                                >
+                                    Membantu
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => void handleFeedback(message, 1)}
+                                    disabled={busyMessageId === message.messageId || ratedMessageIds.has(message.messageId)}
+                                    className="rounded px-2 py-1 underline hover:text-mc-primary disabled:opacity-50"
+                                    aria-label="Jawaban tidak membantu"
+                                >
+                                    Tidak membantu
+                                </button>
+                            </div>
+                        )}
+                        {message.role === "ai" && message.messageId && ratedMessageIds.has(message.messageId) && (
+                            <p className="mt-1 text-xs text-mc-dark/60" role="status">Terima kasih atas feedback Anda.</p>
+                        )}
+                    </article>
                 ))}
-
-                {/* Loading State Skeleton */}
-                {isLoading && (
-                    <div className="flex flex-col items-start">
-                        <div className="glass-panel px-4 py-3 rounded-2xl rounded-tl-none max-w-[85%] flex gap-1 items-center">
-                            <div className="w-2 h-2 rounded-full bg-mc-dark/40 animate-pulse"></div>
-                            <div className="w-2 h-2 rounded-full bg-mc-dark/40 animate-pulse delay-75"></div>
-                            <div className="w-2 h-2 rounded-full bg-mc-dark/40 animate-pulse delay-150"></div>
-                        </div>
-                    </div>
-                )}
-
+                {isLoading && <p className="text-sm text-mc-dark/60" role="status">Sedang mencari jawaban...</p>}
+                {errorMessage && <p className="text-sm text-error" role="alert">{errorMessage}</p>}
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Prompt Input */}
-            <div className="p-3 bg-white/40 border-t border-white/50 backdrop-blur-md">
+            <footer className="space-y-2 border-t border-white/50 bg-white/40 p-3 backdrop-blur-md">
+                {sessionId && (
+                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                        <button
+                            type="button"
+                            onClick={() => void handleHandoff()}
+                            disabled={isLoading}
+                            className="text-xs font-medium text-mc-primary underline disabled:opacity-50"
+                        >
+                            Hubungi agent manusia
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => void handleResolve()}
+                            disabled={isLoading}
+                            className="text-xs font-medium text-mc-dark underline disabled:opacity-50"
+                        >
+                            Tandai selesai
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => void handleDeleteSession()}
+                            disabled={isLoading}
+                            className="text-xs font-medium text-error underline disabled:opacity-50"
+                        >
+                            Hapus data sesi
+                        </button>
+                    </div>
+                )}
                 <div className="flex gap-2">
                     <input
                         type="text"
                         value={input}
-                        onChange={(e) => setInput(e.target.value)}
+                        onChange={(event) => setInput(event.target.value)}
                         onKeyDown={handleKeyDown}
                         disabled={isLoading}
+                        maxLength={4_000}
+                        aria-label="Pertanyaan untuk support"
                         placeholder="Ketik pertanyaan Anda..."
-                        className="flex-1 rounded-lg border border-mc-soft bg-white/60 px-4 py-2 text-sm text-mc-dark outline-none transition focus:border-mc-primary focus:ring-2 focus:ring-mc-primary/20 disabled:opacity-50"
+                        className="min-w-0 flex-1 rounded-lg border border-mc-soft bg-white/70 px-4 py-2 text-sm text-mc-dark outline-none transition focus:border-mc-primary focus:ring-2 focus:ring-mc-primary/20 disabled:opacity-50"
                     />
                     <Button
                         variant="primary"
                         size="sm"
                         className="px-4"
-                        onClick={handleSend}
+                        onClick={() => void handleSend()}
                         disabled={isLoading || !input.trim()}
                     >
                         Kirim
                     </Button>
                 </div>
-            </div>
-        </div>
+            </footer>
+        </section>
     );
 };

@@ -15,13 +15,13 @@ export const Sidebar: React.FC = () => {
     const pathname = usePathname();
 
     return (
-        <aside className="w-64 min-h-screen glass-panel-dark flex flex-col py-6 px-4 border-r border-mc-dark/10">
+        <aside className="glass-panel-dark flex w-full flex-col border-b border-mc-dark/10 px-4 py-4 md:min-h-screen md:w-64 md:border-b-0 md:border-r md:py-6">
             <div className="mb-8 px-2">
                 <h1 className="text-xl font-bold text-mc-dark">Enterprise RAG</h1>
                 <p className="text-xs text-mc-dark/60 font-medium tracking-wide">ADMIN CONSOLE</p>
             </div>
 
-            <nav className="flex-1 space-y-1.5">
+            <nav className="grid flex-1 grid-cols-2 gap-1.5 md:block md:space-y-1.5">
                 {menuItems.map((item) => {
                     const isActive = pathname === item.path;
                     return (
@@ -40,15 +40,14 @@ export const Sidebar: React.FC = () => {
                 })}
             </nav>
 
-            {/* User Profile / Logout Placeholder */}
             <div className="mt-auto border-t border-mc-dark/10 pt-4 px-2">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-mc-soft flex items-center justify-center text-mc-dark text-xs font-bold">
                         AD
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-mc-dark">Admin User</span>
-                        <span className="text-xs text-mc-dark/60">Logout</span>
+                        <span className="text-sm font-semibold text-mc-dark">Admin (demo)</span>
+                        <span className="text-xs text-mc-dark/60">Development only</span>
                     </div>
                 </div>
             </div>

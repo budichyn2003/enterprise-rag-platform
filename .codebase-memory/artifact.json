@@ -1,0 +1,11 @@
+{
+    "schema_version": 2,
+    "commit": "536979ae0e59915e9f8ac8fee5b9d2768d70c803",
+    "indexed_at": "2026-10-24T16:53:34Z",
+    "project": "D-Kumpulan-Projek-AI-enterprise-rag-platform",
+    "nodes": 539,
+    "edges": 1316,
+    "original_size": 5177344,
+    "compressed_size": 676227,
+    "compression_level": 3
+}

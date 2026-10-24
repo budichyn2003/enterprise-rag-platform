@@ -21,14 +21,22 @@ export default function Home() {
                     Platform AI-Powered Customer Support untuk menjawab pertanyaan Anda secara otomatis, akurat, dan bersumber dari basis pengetahuan resmi kami.
                 </p>
 
-                {/* Dummy Call-to-Action untuk estetika halaman */}
                 <div className="flex justify-center gap-4">
-                    <button className="bg-mc-primary text-white rounded-lg px-6 py-3 font-medium hover:bg-mc-dark transition-colors duration-200 shadow-sm">
-                        Pelajari Lebih Lanjut
+                    <button
+                        type="button"
+                        onClick={() => window.dispatchEvent(new Event("enterprise-rag:open-chat"))}
+                        className="rounded-lg bg-mc-primary px-6 py-3 font-medium text-white shadow-sm transition-colors duration-200 hover:bg-mc-dark"
+                    >
+                        Mulai percakapan
                     </button>
-                    <button className="glass-panel text-mc-dark rounded-lg px-6 py-3 font-medium hover:bg-white/60 transition-colors duration-200">
+                    <a
+                        href="http://localhost:8000/docs"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="glass-panel rounded-lg px-6 py-3 font-medium text-mc-dark transition-colors duration-200 hover:bg-white/60"
+                    >
                         Dokumentasi API
-                    </button>
+                    </a>
                 </div>
             </section>
 
